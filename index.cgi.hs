@@ -27,7 +27,7 @@ cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= 
 	where
 		doc x = liftIO $ do
 			cnt <- selectContents <$> contents <*> getStdGen
-			(os, c, t, m) <- return . convert $ cnt
+			let (os, c, t, m) = convert cnt
 			xs <- seeds (length t) <$> getStdGen
 			(avn, g) <- randomR (0, 1000) <$> getStdGen
 			let pn = fst $ randomR (0, 10000) g
@@ -35,10 +35,16 @@ cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= 
 			let msg = Html [HtmlString m]
 			let links = embedLinks t xs
 			let apachev = apacheInfo avn os x pn
-			return . renderHtml $ html title' msg links apachev
+			return . render' $ html title' msg links apachev
 
 
 -----------------------------------------------------------------
+
+render' :: Html -> String
+render' = foldr ff "" . getHtmlElements
+	where
+		ff x acc = (concat . prettyHtml') x ++ acc
+
 
 html :: Html -> Html -> Html -> Html -> Html
 html title' msg links apachev = htmlHeader +++ htmlBody
