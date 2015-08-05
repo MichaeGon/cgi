@@ -35,15 +35,11 @@ cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= 
 			let msg = Html [HtmlString m]
 			let links = embedLinks t xs
 			let apachev = apacheInfo avn os x pn
-			return . render' $ html title' msg links apachev
+			return . renderHtml $ html title' msg links apachev
 
 
 -----------------------------------------------------------------
-
-render' :: Html -> String
-render' = foldr ff "" . getHtmlElements
-	where
-		ff x acc = (concat . prettyHtml') x ++ acc
+		
 
 
 html :: Html -> Html -> Html -> Html -> Html
