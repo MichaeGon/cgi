@@ -11,19 +11,20 @@ module FileManager
 	) where
 
 import Control.Monad
+import System.FilePath
 
 type HTTPCode = (String, String, String)
 
 data Content = Strings String | HCode HTTPCode deriving (Eq)
 
 osPath :: FilePath
-osPath = "data/os.dat"
+osPath = "data" </> "os.dat"
 
 codePath :: FilePath
-codePath = "data/code.dat"
+codePath = "data" </> "code.dat"
 
 linkPath :: FilePath
-linkPath = "../data/link.dat"
+linkPath = ".." </> "data" </> "link.dat"
 
 toString :: Content -> Maybe String
 toString (Strings str) = Just str
@@ -44,4 +45,3 @@ codeContents = readFile' codePath >>= return . map (HCode . read)
 
 linkContents :: IO [Content]
 linkContents = readFile' linkPath >>= return . map Strings
-

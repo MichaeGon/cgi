@@ -4,12 +4,7 @@ module RandomST
 	( State()
 	, randomST
 	, randomRST
-	, random
-	, randomR
-	, starray
-	, mkStdGen
-	, getStdGen
-	, runState
+	, randomRSTList
 	, RandomGen
 	, Random
 	) where
@@ -23,6 +18,5 @@ randomST = state random
 randomRST :: (RandomGen g, Random a) => (a, a) -> State g a
 randomRST = state . randomR
 
-starray :: (RandomGen g, Random a) => [(a, a)] -> State g [a]
-starray = sequence . foldr (\x acc -> randomRST x : acc) []
-
+randomRSTList :: (RandomGen g, Random a) => [(a, a)] -> State g [a]
+randomRSTList = sequence . foldr (\x acc -> randomRST x : acc) []

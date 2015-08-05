@@ -1,73 +1,91 @@
-{-# OPTIONS -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
+import Control.Applicative
+import Control.Arrow hiding ((+++))
+import Control.Monad
+import Control.Monad.State
 import Data.List
-import Network.CGI
+import Network.CGI hiding (Html)
+import System.FilePath
+import System.Random
+import Text.Html hiding ((</>))
 
-import FileManager
-import RandomST
+nextCGI :: FilePath
+nextCGI = "tmp" </> "jump.cgi"
+
+osFile :: FilePath
+osFile = "data" </> "os.dat"
+
+codeFile :: FilePath
+codeFile = "data" </> "code.dat"
+--------------------------------
 
 main :: IO ()
 main = runCGI $ handleErrors cgiMain
 
 cgiMain :: CGI CGIResult
-cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> liftIO getArguments >>= liftIO . html >>= output
-
-
-html :: [String] -> IO String
-html [c, title, msg, name, apachev, portn] = linkEmbed title >>= return . rems
-		where
-		rems x = concat [
-			"<html>",
-			"<head>",
-			"<meta charset=\"UTF-8\">",
-			"<title>" ++ c ++ " " ++ title ++ "</title>",
-			"<link rel=\"stylesheet\" type=\"text/css\" href=\"basic.css\" />",
-			"</head>",
-			"<body>",
-			"<h1>" ++ x ++ "</h1>",
-			"<br />",
-			msg ++ "<br />",
-			"<hr />",
-			"<div id=\"body_second\">",
-			"Apache/" ++ apachev ++ " (" ++ name ++ ") Server at michaegon.jp Port " ++ portn ++ "<br />",
-			"</div>",
-			"</body>",
-			"</html>"]
-
-html _ = error "html: invalid number of arguments"
-
-linkEmbed :: String -> IO String
-linkEmbed xs = rands >>= return . foldr mkTag [] . flip zip xs
-
-mkTag :: (Int, Char) -> String -> String
-mkTag (n, x) acc = "<a href=\"tmp/jump.cgi?index=" ++ show n ++ "\" target=\"_blank\">" ++ [x] ++ "</a>" ++ acc
-
-rands :: IO [Int]
-rands = getStdGen >>= return . fst . runState source
+cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= doc >>= output
 	where
-	source = sequence $ repeat randomST
+		doc x = liftIO $ do
+			cnt <- selectContents <$> contents <*> getStdGen
+			(os, c, t, m) <- return . convert $ cnt
+			xs <- seeds (length t) <$> getStdGen
+			(avn, g) <- randomR (0, 1000) <$> getStdGen
+			let pn = fst $ randomR (0, 10000) g
+			let title' = titleTag c t
+			let msg = Html [HtmlString m]
+			let links = embedLinks t xs
+			let apachev = apacheInfo avn os x pn
+			return . prettyHtml $ html title' msg links apachev
 
 
-getArguments :: IO [String]
-getArguments = sequence [codeContents, osContents] >>= getComponents >>= return . mkArguments
+-----------------------------------------------------------------
 
-mkArguments :: [Content] -> [String]
-mkArguments (HCode (u, v, w) : Strings x : Strings y : Strings z : _) = [u, v, w, x, y, z]
-mkArguments _ = ["000", "Undefined", "", "undefined", "0.0.0", "0"]
-
-getComponents :: [[Content]] -> IO [Content]
-getComponents xs = source >>= return . foldr (\(x, i) acc -> (x !! i) : acc) []
+html :: Html -> Html -> Html -> Html -> Html
+html title' msg links apachev = htmlHeader +++ htmlBody
 	where
-	source = getStdGen >>= return . zip xs' . fst . runState (starray $ getRanges xs')
-	xs' = xs ++ [apacheVer, portNum]
+		htmlHeader = header . concatHtml $ [meta', title', css]
+		meta' = meta ! [strAttr "charset" "UTF-8"]
+		css = itag "link" ! [rel "stylesheet", strAttr "type" "text/css", href "basic.css"]
+		htmlBody = body . concatHtml $ [links, br, msg, br, hr, div']
+		div' = tag "div" (apachev +++ br) ! [identifier "body_second"]
 
-apacheVer :: [Content]
-apacheVer = map (Strings . intersperse '.' . show) ([0..1000] :: [Int])
+titleTag :: String -> String -> Html
+titleTag c t = tag "title" . Html $ [HtmlString (c ++ t)]
 
-portNum :: [Content]
-portNum = map (Strings . show) ([0..10000] :: [Int])
-
-getRanges :: [[Content]] -> [(Int, Int)]
-getRanges = foldr (\x acc -> (0, pred $ length x) : acc) []
-
+embedLinks :: String -> [Int] -> Html
+embedLinks xs = concatHtml . foldr ff [] . zip xs
+	where
+		ff (c, n) acc = (anchor . Html) [HtmlString [c]] ! [href (nextCGI ++ "?index=" ++ show n), target "_blank"] : acc
 
 
+apacheInfo :: Int -> String -> String -> Int -> Html
+apacheInfo ver n sname port = Html [HtmlString str] +++ br
+	where
+		ver' = intersperse '.' . show $ ver
+		str = "Apache/" ++ ver' ++ " (" ++ n ++ ") Server at " ++ sname ++ " Port " ++ show port
+
+
+selectContents :: (RandomGen g) => [([String], Int)] -> g -> [String]
+selectContents xs = evalState xs'
+	where
+		xs' = mapM mbf xs
+		mbf (x, n) = state (random' x (0, n))
+		random' x b = first (x !!) . randomR b
+
+seeds :: (RandomGen g) => Int -> g -> [Int]
+seeds n = take n . randoms
+
+convert :: [String] -> (String, String, String, String)
+convert [x, y] = (x, a, b, c)
+	where
+		(a, b, c) = read y
+convert _ = (a, a, a, a)
+	where
+		a = "error at convert"
+
+------------------------------------------
+
+contents :: IO [([String], Int)]
+contents = mapM (edit . lines <=< readFile) [osFile, codeFile]
+	where
+		edit xs = return (xs, length xs)
