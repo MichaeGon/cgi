@@ -35,7 +35,7 @@ cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= 
 			let msg = Html [HtmlString m]
 			let links = embedLinks t xs
 			let apachev = apacheInfo avn os x pn
-			return . prettyHtml $ html title' msg links apachev
+			return . renderHtml $ html title' msg links apachev
 
 
 -----------------------------------------------------------------
@@ -50,10 +50,10 @@ html title' msg links apachev = htmlHeader +++ htmlBody
 		div' = tag "div" (apachev +++ br) ! [identifier "body_second"]
 
 titleTag :: String -> String -> Html
-titleTag c t = tag "title" . Html $ [HtmlString (c ++ t)]
+titleTag c t = tag "title" . Html $ [HtmlString (c ++ " " ++ t)]
 
 embedLinks :: String -> [Int] -> Html
-embedLinks xs = concatHtml . foldr ff [] . zip xs
+embedLinks xs = h1 . concatHtml . foldr ff [] . zip xs
 	where
 		ff (c, n) acc = (anchor . Html) [HtmlString [c]] ! [href (nextCGI ++ "?index=" ++ show n), target "_blank"] : acc
 
