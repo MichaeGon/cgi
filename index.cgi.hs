@@ -39,7 +39,7 @@ cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> serverName >>= 
 
 
 -----------------------------------------------------------------
-		
+
 
 
 html :: Html -> Html -> Html -> Html -> Html
@@ -47,12 +47,12 @@ html title' msg links apachev = htmlHeader +++ htmlBody
 	where
 		htmlHeader = header . concatHtml $ [meta', title', css]
 		meta' = meta ! [strAttr "charset" "UTF-8"]
-		css = itag "link" ! [rel "stylesheet", strAttr "type" "text/css", href "basic.css"]
+		css = itag "LINK" ! [rel "stylesheet", strAttr "type" "text/css", href "basic.css"]
 		htmlBody = body . concatHtml $ [links, br, msg, br, hr, div']
-		div' = tag "div" (apachev +++ br) ! [identifier "body_second"]
+		div' = tag "DIV" (apachev +++ br) ! [identifier "body_second"]
 
 titleTag :: String -> String -> Html
-titleTag c t = tag "title" . Html $ [HtmlString (c ++ " " ++ t)]
+titleTag c t = tag "TITLE" . Html $ [HtmlString (c ++ " " ++ t)]
 
 embedLinks :: String -> [Int] -> Html
 embedLinks xs = h1 . concatHtml . foldr ff [] . zip xs
