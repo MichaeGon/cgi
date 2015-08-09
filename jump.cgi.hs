@@ -33,18 +33,6 @@ getVar' x = readInput x >>= return . safety
 	safety _ = 100
 
 html :: FilePath -> Html
-{-
-html path = concat [
-	"<html>",
-	"<head>",
-	"<meta http-equiv=\"refresh\" content=\"0; URL=" ++ path ++ "\">",
-	"<meta charset=\"UTF-8\">",
-	"<title>jump</title>",
-	"</head>",
-	"<body>",
-	"</body>",
-	"</html>"]
--}
 html path = htmlHeader +++ body noHtml
 	where
 		htmlHeader = header . concatHtml $ [meta', title']
