@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 import Control.Applicative
-import Control.Monad
-import Data.Maybe
-import Network.CGI
+import Network.CGI hiding (Html)
 import System.FilePath
 import System.Random
 import Text.Html hiding((</>))
@@ -15,20 +13,20 @@ main :: IO ()
 main = runCGI $ handleErrors cgiMain
 
 cgiMain :: CGI CGIResult
-cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> liftIO url >>= output . prettyHtml . html
+cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> url >>= output . prettyHtml . html
  	where
-		cnts = readFile linkFile
+		cnts = lines <$> (liftIO . readFile) linkFile
 		len = length <$> cnts
 		idx = getIndex <$> gen <*> len
 		url = (!!) <$> cnts <*> idx
 		gen = mkStdGen <$> getVar' "index"
 
 getIndex :: StdGen -> Int -> Int
-getIndex n = fst $ randomR range (mkStdGen n)
+getIndex g n = fst $ randomR range g
 	where
 		range = (0, n - 1)
 
-getVar' :: (Monad m) => String -> m Int
+getVar' :: (MonadCGI m) => String -> m Int
 getVar' x = readInput x >>= return . safety
 	where
 	safety (Just str) = str
