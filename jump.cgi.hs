@@ -1,33 +1,41 @@
-{-# OPTIONS -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
+import Control.Applicative
 import Control.Monad
 import Data.Maybe
 import Network.CGI
+import System.FilePath
+import System.Random
+import Text.Html hiding((</>))
 
-import FileManager
-import RandomST
+linkFile :: FilePath
+linkFile = ".." </> "data" </> "link.dat"
+---------------------------------------
 
 main :: IO ()
 main = runCGI $ handleErrors cgiMain
 
 cgiMain :: CGI CGIResult
-cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> url >>= output . html
+cgiMain = setHeader "Content-type" "text/html; charset=UTF-8" >> liftIO url >>= output . prettyHtml . html
+ 	where
+		cnts = readFile linkFile
+		len = length <$> cnts
+		idx = getIndex <$> gen <*> len
+		url = (!!) <$> cnts <*> idx
+		gen = mkStdGen <$> getVar' "index"
 
-url :: CGI FilePath
-url = getVar' "index" >>= liftIO . liftM (fromJust . toString) . content
+getIndex :: StdGen -> Int -> Int
+getIndex n = fst $ randomR range (mkStdGen n)
+	where
+		range = (0, n - 1)
 
-getVar' :: (MonadCGI m) => String -> m Int
+getVar' :: (Monad m) => String -> m Int
 getVar' x = readInput x >>= return . safety
 	where
 	safety (Just str) = str
 	safety _ = 100
 
-content :: Int -> IO Content
-content x = liftM2 (!!) linkContents index
-	where	
-	range xs = (0, length xs - 1)
-	index = linkContents >>= return . fst . flip randomR (mkStdGen x) . range
-
-html :: FilePath -> String
+html :: FilePath -> Html
+{-
 html path = concat [
 	"<html>",
 	"<head>",
@@ -38,4 +46,9 @@ html path = concat [
 	"<body>",
 	"</body>",
 	"</html>"]
-
+-}
+html path = htmlHeader +++ body noHtml
+	where
+		htmlHeader = header . concatHtml $ [meta', title']
+		meta' = meta ! [httpequiv "refresh", content ("0; URL=" ++ path), strAttr "charset" "UTF-8"]
+		title' = tag "TITLE" . Html $ [HtmlString "jump"]
