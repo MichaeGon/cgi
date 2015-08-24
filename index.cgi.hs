@@ -10,7 +10,7 @@ import System.Random
 import Text.Html hiding ((</>))
 
 nextCGI :: FilePath
-nextCGI = "tmp" </> "jump.cgi"
+nextCGI = "cgi" </> "jump.cgi"
 
 osFile :: FilePath
 osFile = "data" </> "os.dat"
