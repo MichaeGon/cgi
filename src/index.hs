@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
+--{-# OPTIONS_GHC -Wall -Werror #-}
 
 import Control.Arrow hiding ((+++))
 import Control.Monad

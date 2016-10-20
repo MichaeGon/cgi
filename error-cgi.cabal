@@ -15,13 +15,13 @@ cabal-version:       >=1.10
 
 executable index.cgi
   hs-source-dirs:    src
-  main-is:           index.cgi.hs
+  main-is:           index.hs
   -- other-modules:
   default-language:  Haskell2010
-  build-depends:     base >= 4.7 && < 5, cgi
+  build-depends:     base >= 4.7 && < 5, cgi, filepath, random, html, mtl
 
 executable jump.cgi
   hs-source-dirs:    src
-  main-is:           jump.cgi.hs
+  main-is:           jump.hs
   default-language:  Haskell2010
-  build-depends:     base >= 4.7 && < 5, cgi 
+  build-depends:     base >= 4.7 && < 5, cgi, filepath, random, html
